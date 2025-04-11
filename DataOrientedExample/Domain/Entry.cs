@@ -1,4 +1,4 @@
-﻿namespace DataOrientedExample;
+﻿namespace DataOrientedExample.Domain;
 
 public struct Entry
 {

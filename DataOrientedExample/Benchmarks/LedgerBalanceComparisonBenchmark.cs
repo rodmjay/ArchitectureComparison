@@ -1,8 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using System;
+using DataOrientedExample.Domain;
 
-namespace DataOrientedExample
+namespace DataOrientedExample.Benchmarks
 {
     [MemoryDiagnoser]
     public class LedgerBalanceComparisonBenchmark

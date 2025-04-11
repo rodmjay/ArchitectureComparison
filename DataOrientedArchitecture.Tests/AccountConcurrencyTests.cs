@@ -1,101 +1,199 @@
-﻿using DataOrientedExample;
+﻿using System.Runtime.CompilerServices;
+using DataOrientedExample.Domain;
+using DataOrientedExample.Entities;
+using DataOrientedExample.Persistence;
+using EFCore.BulkExtensions;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
-using NUnit.Framework;
 
 namespace DataOrientedArchitecture.Tests
 {
-    [TestFixture]
-    public class AccountConcurrencyTests
+    public class LedgerRepository : ILedgerRepository
     {
-        private LedgerContext _context;        // Main context for setup/teardown.
-        private int _testAccountId;              // ID of the test account record.
+        private readonly LedgerContext _context;
 
-        // Define the connection string for the test database.
-        private readonly string _connectionString =
-            @"Server=(localdb)\MSSQLLocalDB;Database=DataOrientedExampleTests;Integrated Security=true;";
-
-        [SetUp]
-        public void SetUp()
+        public LedgerRepository(LedgerContext context)
         {
-            // Create DbContextOptions using the connection string.
-            var options = new DbContextOptionsBuilder<LedgerContext>()
-                .UseSqlServer(_connectionString)
-                .Options;
-
-            // Initialize a new LedgerContext for this test.
-            _context = new LedgerContext(options);
-
-            // Optionally ensure a clean state:
-            _context.Database.EnsureDeleted();
-            _context.Database.EnsureCreated();
-
-            // Create a sample AccountEntity for testing.
-            var testAccount = new AccountEntity
-            {
-                Name = "Concurrency Test Account"
-                // ... set other properties if needed ...
-            };
-            _context.Accounts.Add(testAccount);
-            _context.SaveChanges();  // Insert the record into DB.
-
-            _testAccountId = testAccount.Id;  // Save the generated ID.
+            _context = context;
         }
-        [TearDown]
-        public void TearDown()
+
+        // ------------------------------
+        // CREATE
+        // ------------------------------
+        public async Task SaveLedgerAsync(Ledger ledger, int batchSize = 5000, bool useTransaction = true, CancellationToken cancellationToken = default)
         {
-            if (_context != null)
+            // Map domain objects to EF entities using Mapster (or manual mapping, as desired).
+            var accountEntities = ledger.Accounts.Adapt<List<AccountEntity>>();
+            var transactionEntities = ledger.Transactions.Adapt<List<TransactionEntity>>();
+            var entryEntities = ledger.Entries.Adapt<List<EntryEntity>>();
+
+            // Clear any existing tracking.
+            _context.ChangeTracker.Clear();
+
+            var bulkConfig = new BulkConfig
             {
-                // Create a new context instance so we get the latest state from the DB.
-                var options = new DbContextOptionsBuilder<LedgerContext>()
-                    .UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=DataOrientedExampleTests;Integrated Security=true;")
-                    .Options;
+                BatchSize = batchSize,
+                UseTempDB = useTransaction,  // Use TempDB if transactions are enabled.
+                DoNotUpdateIfTimeStampChanged = true,
+                SetOutputIdentity = true,
+            };
 
-                using var freshContext = new LedgerContext(options);
-                // Load the entity afresh using AsNoTracking so that we get the current RowVersion.
-                var freshAccount = freshContext.Accounts
-                    .AsNoTracking()
-                    .SingleOrDefault(a => a.Id == _testAccountId);
-
-                if (freshAccount != null)
+            if (useTransaction)
+            {
+                using (var transaction = await _context.Database.BeginTransactionAsync(cancellationToken))
                 {
-                    // Attach the fresh entity so EF Core will track it.
-                    freshContext.Accounts.Attach(freshAccount);
-                    freshContext.Accounts.Remove(freshAccount);
-                    freshContext.SaveChanges();
+                    await _context.BulkInsertAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
+                    await _context.BulkInsertAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
+                    await _context.BulkInsertAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
                 }
             }
-
-            _context.Dispose();
+            else
+            {
+                await _context.BulkInsertAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
+                await _context.BulkInsertAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
+                await _context.BulkInsertAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
+            }
         }
 
-
-        [Test]
-        public void Account_UpdateConcurrency_ThrowsException()
+        // ------------------------------
+        // READ
+        // ------------------------------
+        public async Task DeleteLedgerAsync(Ledger ledger, int batchSize = 5000,
+            CancellationToken cancellationToken = default // Third parameter
+        )
         {
-            // Create options for contexts so they use the same connection string.
-            var options = new DbContextOptionsBuilder<LedgerContext>()
-                .UseSqlServer(_connectionString)
-                .Options;
+            // Map domain objects to EF entities using Mapster (or manual mapping, as desired).
+            var accountEntities = ledger.Accounts.Adapt<List<AccountEntity>>();
+            var transactionEntities = ledger.Transactions.Adapt<List<TransactionEntity>>();
+            var entryEntities = ledger.Entries.Adapt<List<EntryEntity>>();
 
-            // Load the same account in two separate contexts.
-            using var context1 = new LedgerContext(options);
-            using var context2 = new LedgerContext(options);
+            // Clear any existing tracking.
+            _context.ChangeTracker.Clear();
 
-            var account1 = context1.Accounts.Single(a => a.Id == _testAccountId);
-            var account2 = context2.Accounts.Single(a => a.Id == _testAccountId);
+            var bulkConfig = new BulkConfig { BatchSize = batchSize, UseTempDB = true };
 
-            // Modify the entity in the first context and save.
-            account1.Name = "Updated Name (User1)";
-            context1.SaveChanges();
-            // At this point, the database row's RowVersion has been updated.
+            // Perform bulk delete for entries, transactions, and accounts.
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            await _context.BulkDeleteAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
+            await _context.BulkDeleteAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
+            await _context.BulkDeleteAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
 
-            // Modify the entity in the second context.
-            account2.Name = "Updated Name (User2)";
-            // Attempt to save changes in the second context - expect a concurrency exception.
-            Assert.Throws<DbUpdateConcurrencyException>(() =>
+        public async Task<Ledger> LoadLedgerAsync(CancellationToken cancellationToken = default)
+        {
+            var loadedLedger = new Ledger();
+
+            var accountEntities = await _context.Accounts.AsNoTracking().ToListAsync(cancellationToken);
+            foreach (var ae in accountEntities)
             {
-                context2.SaveChanges();
-            }, "Expected a DbUpdateConcurrencyException due to row version mismatch");
+                loadedLedger.Accounts.Add(new Account
+                {
+                    Id = ae.Id,
+                    Name = ae.Name,
+                    Type = ae.Type
+                });
+            }
+
+            var transactionEntities = await _context.Transactions
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+            foreach (var te in transactionEntities)
+            {
+                var transaction = new Transaction
+                {
+                    Id = te.Id,
+                    Date = te.Date,
+                    Description = te.Description
+                };
+                
+                loadedLedger.Transactions.Add(transaction);
+            }
+
+            var entryEntities = await _context.Entries.AsNoTracking().ToListAsync(cancellationToken);
+            foreach (var ee in entryEntities)
+            {
+                loadedLedger.Entries.Add(new Entry
+                {
+                    TransactionId = ee.TransactionId,
+                    AccountId = ee.AccountId,
+                    Amount = ee.Amount
+                });
+            }
+
+            return loadedLedger;
+        }
+
+        public async IAsyncEnumerable<EntryEntity> StreamLedgerEntriesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var query = _context.Entries.AsNoTracking();
+            await foreach (var entry in query.AsAsyncEnumerable().WithCancellation(cancellationToken))
+            {
+                yield return entry;
+            }
+        }
+        
+        // ------------------------------
+        // UPDATE (example for bulk updates)
+        // ------------------------------
+        public async Task UpdateLedgerAsync(
+            Ledger ledger, 
+            int batchSize = 5000, 
+            bool useTransaction = true,
+            CancellationToken cancellationToken = default)
+        {
+            // We assume that ledger objects have been modified in memory.
+            // Map updated accounts.
+            var accountEntities = ledger.Accounts.Adapt<List<AccountEntity>>();
+            var transactionEntities = ledger.Transactions.Adapt<List<TransactionEntity>>();
+            var entryEntities = ledger.Entries.Adapt<List<EntryEntity>>();
+
+            _context.ChangeTracker.Clear();
+
+            var bulkConfig = new BulkConfig
+            {
+                BatchSize = batchSize,
+                UseTempDB = true,
+                DoNotUpdateIfTimeStampChanged = true,
+                SetOutputIdentity = true,
+            };
+
+            if (useTransaction)
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                await _context.BulkUpdateAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
+                await _context.BulkUpdateAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
+                await _context.BulkUpdateAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            else
+            {
+                await _context.BulkUpdateAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
+                await _context.BulkUpdateAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
+                await _context.BulkUpdateAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
+            }
+        }
+
+        // ------------------------------
+        // Helper: Reload and attach an entity to ensure its RowVersion is current.
+        // This follows the pattern your test uses.
+        // ------------------------------
+        public async Task<AccountEntity> ReloadAndAttachAccountAsync(int accountId, CancellationToken cancellationToken = default)
+        {
+            // Create fresh options (you can also inject a factory if needed)
+            var options = new DbContextOptionsBuilder<LedgerContext>()
+                .UseSqlServer(_context.Database.GetDbConnection().ConnectionString)
+                .Options;
+            using var freshContext = new LedgerContext(options);
+            var freshAccount = await freshContext.Accounts.AsNoTracking()
+                                    .SingleOrDefaultAsync(a => a.Id == accountId, cancellationToken);
+            if (freshAccount != null)
+            {
+                // Attach the fresh entity to our current context.
+                _context.Accounts.Attach(freshAccount);
+            }
+            return freshAccount;
         }
     }
 }

@@ -1,9 +1,9 @@
 ﻿using BenchmarkDotNet.Attributes;
+using DataOrientedExample.Domain;
+using DataOrientedExample.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading.Tasks;
 
-namespace DataOrientedExample;
+namespace DataOrientedExample.Benchmarks;
 
 [MemoryDiagnoser]
 public class LedgerBenchmark

@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using DataOrientedExample.Domain;
 
-namespace DataOrientedExample;
+namespace DataOrientedExample.Entities;
 
 public class AccountEntity
 {

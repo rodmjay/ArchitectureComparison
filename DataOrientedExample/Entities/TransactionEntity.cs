@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DataOrientedExample;
+namespace DataOrientedExample.Entities;
 
 public class TransactionEntity
 {

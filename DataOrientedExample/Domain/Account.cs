@@ -2,7 +2,7 @@
 
 using AccountId = int;
 
-namespace DataOrientedExample;
+namespace DataOrientedExample.Domain;
 
 public struct Account
 {

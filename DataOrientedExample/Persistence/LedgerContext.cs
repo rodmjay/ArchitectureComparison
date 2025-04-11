@@ -1,7 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿namespace DataOrientedExample.Persistence;
 
-namespace DataOrientedExample;
-
+using DataOrientedExample.Entities;
 using Microsoft.EntityFrameworkCore;
 
 public class LedgerContext : DbContext
@@ -15,17 +14,14 @@ public class LedgerContext : DbContext
         : base(options)
     {
     }
-    
+
     public DbSet<AccountEntity> Accounts { get; set; }
     public DbSet<TransactionEntity> Transactions { get; set; }
     public DbSet<EntryEntity> Entries { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=AccountingPro;Integrated Security=true;");
-        }
+ 
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
