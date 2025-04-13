@@ -1,8 +1,8 @@
-﻿using DataOrientedExample.Domain;
-using DataOrientedExample.Entities;
+﻿using AccountingDomain;
+using Benchmarks.Entities;
 using Mapster;
 
-namespace DataOrientedExample
+namespace Benchmarks
 {
     public static class MappingConfig
     {

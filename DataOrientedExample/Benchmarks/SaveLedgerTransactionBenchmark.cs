@@ -1,9 +1,9 @@
-﻿using BenchmarkDotNet.Attributes;
-using DataOrientedExample.Domain;
-using DataOrientedExample.Persistence;
+﻿using AccountingData.Persistence;
+using AccountingDomain;
+using BenchmarkDotNet.Attributes;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataOrientedExample.Benchmarks
+namespace Benchmarks.Benchmarks
 {
     [MemoryDiagnoser]
     public class SaveLedgerTransactionBenchmark

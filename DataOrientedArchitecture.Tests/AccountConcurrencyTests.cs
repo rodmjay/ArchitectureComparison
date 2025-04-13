@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
-using DataOrientedExample.Domain;
-using DataOrientedExample.Entities;
-using DataOrientedExample.Persistence;
+using AccountingData.Persistence;
+using AccountingDomain;
+using Benchmarks.Entities;
 using EFCore.BulkExtensions;
 using Mapster;
 using Microsoft.EntityFrameworkCore;

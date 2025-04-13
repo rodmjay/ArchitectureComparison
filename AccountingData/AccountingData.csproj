@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="HotChocolate.Data.EntityFramework" Version="15.1.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.15" />
+		<PackageReference Include="efcore.bulkextensions.sqlserver" Version="8.1.3" />
+
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.15">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\AccountingDomain\AccountingDomain.csproj" />
+	</ItemGroup>
+
+</Project>

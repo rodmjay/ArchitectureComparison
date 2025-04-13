@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataOrientedExample\DataOrientedExample.csproj" />
+    <ProjectReference Include="..\DataOrientedExample\Benchmarks.csproj" />
   </ItemGroup>
 
 </Project>

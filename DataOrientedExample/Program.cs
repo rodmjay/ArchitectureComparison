@@ -1,36 +1,47 @@
-﻿using BenchmarkDotNet.Running;
-using DataOrientedExample.Benchmarks;
-using DataOrientedExample.Persistence;
+﻿using AccountingData.Persistence;
+using BenchmarkDotNet.Running;
+using Benchmarks.Benchmarks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-namespace DataOrientedExample;
 
-public class Program
+namespace Benchmarks
 {
-    static async Task Main(string[] args)
+    public class Program
     {
-        MappingConfig.RegisterMappings();
+        public static async Task Main(string[] args)
+        {
+            //MappingConfig.RegisterMappings();
 
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices((context, services) =>
-            {
-                // Configure LedgerContext to use SQL Server, with no-tracking by default.
-                services.AddDbContextPool<LedgerContext>(options =>
-                    options.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=AccountingPro;Integrated Security=true;")
-                        .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+            BenchmarkRunner.Run<PipelineDatabaseBenchmark>();
 
-                // Register LedgerRepository.
-                services.AddScoped<LedgerRepository>();
 
-                // Other services can be registered here if needed.
-            })
-            .Build();
+            //var host = Host.CreateDefaultBuilder(args)
+            //    .ConfigureServices((context, services) =>
+            //    {
+            //        services.AddDbContextPool<LedgerContext>(options =>
+            //            options.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=AccountingPro;Integrated Security=true;")
+            //                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
-        //BenchmarkRunner.Run<LedgerBenchmark>();
-        //BenchmarkRunner.Run<LedgerComputeBenchmark>();
-        //BenchmarkRunner.Run<LedgerDeleteBenchmark>();
-        //BenchmarkRunner.Run<LedgerBalanceComparisonBenchmark>();
-        BenchmarkRunner.Run<TransactionSearchBenchmark>();
+            //        services.AddScoped<LedgerRepository>();
+
+            //        // If you're hosting an API, you could also add:
+            //        // services.AddControllers();
+            //    })
+            //    .Build();
+
+            //if (args.Contains("--benchmark"))
+            //{
+            //    BenchmarkRunner.Run<TransactionSearchBenchmark>();
+            //}
+            //else
+            //{
+            //    // Start the API endpoints.
+            //    var app = host.Services.GetRequiredService<IHost>();
+            //    // Map more endpoints as needed, for example:
+            //    // app.MapPost("/import", async (HttpContext context, ILedgerRepository repo) => { ... });
+            //    await app.RunAsync();
+            //}
+        }
     }
 }

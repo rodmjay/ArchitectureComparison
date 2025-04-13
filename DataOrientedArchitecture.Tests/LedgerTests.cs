@@ -1,7 +1,7 @@
-﻿using NUnit.Framework;
-using DataOrientedExample.Domain;
-using System;
+﻿using System;
 using System.Linq;
+using AccountingDomain;
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
 namespace DataOrientedArchitecture.Tests

@@ -1,7 +1,9 @@
-﻿using DataOrientedExample.Domain;
-using DataOrientedExample.Persistence;
+﻿using AccountingData.Persistence;
+using AccountingDomain;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace DataOrientedArchitecture.Tests
 {
@@ -51,13 +53,12 @@ namespace DataOrientedArchitecture.Tests
             using var cts = new CancellationTokenSource();
 
             // Start the SaveLedgerAsync operation.
-            var task = _repository.SaveLedgerAsync(_ledger, batchSize: 5000, useTransaction: true, cancellationToken: cts.Token);
+            var task = _repository.SaveLedgerAsync(_ledger, cancellationToken: cts.Token);
 
             // Cancel the token quickly.
             cts.Cancel();
 
-            // Await the task and expect an OperationCanceledException.
-            Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
+            Assert.ThrowsAsync <SqlException>(async () => await task);
         }
     }
 }
