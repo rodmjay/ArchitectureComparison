@@ -9,7 +9,7 @@ namespace Benchmarks.Benchmarks;
 public class LedgerBenchmark
 {
     // Parameter for number of transactions.
-    [Params(100, 1000, 10000)]
+    [Params(100, 1_000, 10_000)]
     public int TransactionCount { get; set; }
 
     // New parameter for testing different BatchSize values.

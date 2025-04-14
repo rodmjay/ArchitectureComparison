@@ -19,47 +19,55 @@ namespace Benchmarks.Benchmarks
         private MemoryStream _jsonStream;
         private DbContextOptions<PipelineDbContext> _dbOptions;
 
-        [Params(10_000, 100_000)]
+        // Adjust the connection string as needed.
+        private const string ConnectionString =
+            "Server=(localdb)\\MSSQLLocalDB;Database=BenchmarkDb;Trusted_Connection=True;MultipleActiveResultSets=true";
+
+        [Params(1, 10_000)]
         public int RecordCount { get; set; }
 
         [GlobalSetup]
         public void GlobalSetup()
         {
-            // Configure the in-memory database.
+            // Configure EF Core to use SQL Server.
             _dbOptions = new DbContextOptionsBuilder<PipelineDbContext>()
-                .UseInMemoryDatabase(databaseName: "BenchmarkDb")
+                .UseSqlServer(ConnectionString)
                 .Options;
 
-            // Ensure the database is created.
+            // Ensure a clean database state.
             using (var context = new PipelineDbContext(_dbOptions))
             {
+                context.Database.EnsureDeleted();
+                // In production, you might call context.Database.Migrate();
                 context.Database.EnsureCreated();
             }
 
-            // Create a new DbContextFactory.
+            // Instantiate the DbContextFactory.
             var dbContextFactory = new SimpleDbContextFactory(_dbOptions);
 
             // Set up the pipeline components.
-            var jsonParser = new SystemTextJsonStreamParser();
-            var transformer = new SampleRecordTransformer();
+            IJsonParser jsonParser = new SystemTextJsonStreamParser();
+            IRecordTransformer<Record, Record> transformer = new SampleRecordTransformer();
 
-            // Use the factory-based sink.
-            var sink = new DatabaseRecordSink(dbContextFactory);
+            // Use a sink that performs bulk insertion using EF Core Bulk Extensions.
+            IRecordSink<Record> sink = new DatabaseRecordSink(dbContextFactory);
+
+            // Create the pipeline; adjust the batch size as desired.
             _pipeline = new LargeFileProcessingPipeline(jsonParser, transformer, sink, batchSize: 1000);
 
             // Generate synthetic JSON data.
-            var options = new JsonSerializerOptions { WriteIndented = false };
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = false };
             var records = new Record[RecordCount];
             for (int i = 0; i < RecordCount; i++)
             {
                 records[i] = new Record
                 {
-                    Id = i,
-                    Name = "Record " + i,
+                    // Do not set the Id; let SQL Server generate it.
+                    Name = $"Record {i}",
                     Value = i * 0.1
                 };
             }
-            string json = JsonSerializer.Serialize(records, options);
+            string json = JsonSerializer.Serialize(records, jsonOptions);
             byte[] bytes = Encoding.UTF8.GetBytes(json);
             _jsonStream = new MemoryStream(bytes);
             _jsonStream.Position = 0;
@@ -68,10 +76,10 @@ namespace Benchmarks.Benchmarks
         [IterationSetup]
         public void IterationSetup()
         {
-            // Reset the stream position.
+            // Reset the JSON stream position.
             _jsonStream.Position = 0;
 
-            // Recreate the in-memory database for a fresh state.
+            // Recreate the database for a fresh state before each iteration.
             using (var context = new PipelineDbContext(_dbOptions))
             {
                 context.Database.EnsureDeleted();
@@ -85,5 +93,4 @@ namespace Benchmarks.Benchmarks
             await _pipeline.ProcessFileAsync(_jsonStream);
         }
     }
-
 }

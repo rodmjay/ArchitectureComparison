@@ -13,35 +13,28 @@ namespace Benchmarks
         {
             //MappingConfig.RegisterMappings();
 
+
+
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddDbContextPool<LedgerContext>(options =>
+                        options.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=AccountingPro;Integrated Security=true;")
+                            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+
+                    services.AddScoped<LedgerRepository>();
+
+                    // If you're hosting an API, you could also add:
+                    // services.AddControllers();
+                })
+                .Build();
+
             BenchmarkRunner.Run<PipelineDatabaseBenchmark>();
+            BenchmarkRunner.Run<PipelineBenchmark>();
+            BenchmarkRunner.Run<LedgerBenchmark>();
+            BenchmarkRunner.Run<LedgerBalanceComparisonBenchmark>();
+            BenchmarkRunner.Run<TransactionSearchBenchmark>();
 
-
-            //var host = Host.CreateDefaultBuilder(args)
-            //    .ConfigureServices((context, services) =>
-            //    {
-            //        services.AddDbContextPool<LedgerContext>(options =>
-            //            options.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=AccountingPro;Integrated Security=true;")
-            //                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
-
-            //        services.AddScoped<LedgerRepository>();
-
-            //        // If you're hosting an API, you could also add:
-            //        // services.AddControllers();
-            //    })
-            //    .Build();
-
-            //if (args.Contains("--benchmark"))
-            //{
-            //    BenchmarkRunner.Run<TransactionSearchBenchmark>();
-            //}
-            //else
-            //{
-            //    // Start the API endpoints.
-            //    var app = host.Services.GetRequiredService<IHost>();
-            //    // Map more endpoints as needed, for example:
-            //    // app.MapPost("/import", async (HttpContext context, ILedgerRepository repo) => { ... });
-            //    await app.RunAsync();
-            //}
         }
     }
 }

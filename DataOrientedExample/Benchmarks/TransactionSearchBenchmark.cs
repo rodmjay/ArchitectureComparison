@@ -7,7 +7,7 @@ namespace Benchmarks.Benchmarks
     public class TransactionSearchBenchmark
     {
         // Test with different ledger sizes.
-        [Params(1000, 10000)]
+        [Params(1000, 10_000, 100_000)]
         public int TransactionCount { get; set; }
 
         private Ledger ledger;
