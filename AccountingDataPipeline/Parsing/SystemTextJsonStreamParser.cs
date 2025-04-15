@@ -1,13 +1,18 @@
-﻿using System.Text.Json;
+﻿using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace AccountingDataPipeline.Parsing;
 
 public class SystemTextJsonStreamParser : IJsonParser
 {
-    public async IAsyncEnumerable<T> ParseAsync<T>(Stream stream, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
     {
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable<T>(stream, options, cancellationToken))
+        PropertyNameCaseInsensitive = true
+    };
+
+    public async IAsyncEnumerable<T> ParseAsync<T>(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable<T>(stream, Options, cancellationToken))
         {
             if (item != null)
             {
@@ -16,3 +21,4 @@ public class SystemTextJsonStreamParser : IJsonParser
         }
     }
 }
+

@@ -1,5 +1,8 @@
-﻿using System.Text;
+﻿using System;
+using System.IO;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using AccountingDataPipeline;
 using AccountingDataPipeline.Data;
 using AccountingDataPipeline.Parsing;
@@ -23,8 +26,13 @@ namespace Benchmarks.Benchmarks
         private const string ConnectionString =
             "Server=(localdb)\\MSSQLLocalDB;Database=BenchmarkDb;Trusted_Connection=True;MultipleActiveResultSets=true";
 
+        // Benchmark for a small (1) and large (10,000) record set.
         [Params(1, 10_000)]
         public int RecordCount { get; set; }
+
+        // Use the parameter to select the parser variant: "Old" for SystemTextJsonStreamParser, or "New" for LargeFileUtf8JsonParser.
+        [Params("Old", "New")]
+        public string ParserVariant { get; set; }
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -38,21 +46,25 @@ namespace Benchmarks.Benchmarks
             using (var context = new PipelineDbContext(_dbOptions))
             {
                 context.Database.EnsureDeleted();
-                // In production, you might call context.Database.Migrate();
                 context.Database.EnsureCreated();
             }
 
             // Instantiate the DbContextFactory.
             var dbContextFactory = new SimpleDbContextFactory(_dbOptions);
 
-            // Set up the pipeline components.
-            IJsonParser jsonParser = new SystemTextJsonStreamParser();
-            IRecordTransformer<Record, Record> transformer = new SampleRecordTransformer();
+            // Select the JSON parser based on the benchmark parameter.
+            IJsonParser jsonParser = ParserVariant switch
+            {
+                "Old" => new SystemTextJsonStreamParser(),
+                "New" => new LargeFileUtf8JsonParser(),
+                _ => throw new ArgumentException("Invalid parser variant")
+            };
 
-            // Use a sink that performs bulk insertion using EF Core Bulk Extensions.
+            // Set up the pipeline components.
+            IRecordTransformer<Record, Record> transformer = new SampleRecordTransformer();
             IRecordSink<Record> sink = new DatabaseRecordSink(dbContextFactory);
 
-            // Create the pipeline; adjust the batch size as desired.
+            // Create the processing pipeline; adjust the batch size as desired.
             _pipeline = new LargeFileProcessingPipeline(jsonParser, transformer, sink, batchSize: 1000);
 
             // Generate synthetic JSON data.
@@ -62,7 +74,7 @@ namespace Benchmarks.Benchmarks
             {
                 records[i] = new Record
                 {
-                    // Do not set the Id; let SQL Server generate it.
+                    // Let SQL Server generate the Id.
                     Name = $"Record {i}",
                     Value = i * 0.1
                 };
@@ -76,7 +88,7 @@ namespace Benchmarks.Benchmarks
         [IterationSetup]
         public void IterationSetup()
         {
-            // Reset the JSON stream position.
+            // Reset the JSON stream position before each benchmark iteration.
             _jsonStream.Position = 0;
 
             // Recreate the database for a fresh state before each iteration.
@@ -92,5 +104,8 @@ namespace Benchmarks.Benchmarks
         {
             await _pipeline.ProcessFileAsync(_jsonStream);
         }
+
+        // Entry point if you want to run from a console app.
+
     }
 }

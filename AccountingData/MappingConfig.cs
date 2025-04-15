@@ -2,7 +2,7 @@
 using Benchmarks.Entities;
 using Mapster;
 
-namespace Benchmarks
+namespace AccountingData
 {
     public static class MappingConfig
     {

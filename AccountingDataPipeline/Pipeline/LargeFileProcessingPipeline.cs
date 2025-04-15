@@ -29,7 +29,6 @@ namespace AccountingDataPipeline.Pipeline
         {
             var records = _jsonParser.ParseAsync<Record>(fileStream, cancellationToken);
 
-            // Transform and batch process the records.
             await foreach (var batch in records.TransformAndBatchAsync(_transformer, _batchSize, cancellationToken))
             {
                 await _sink.WriteBatchAsync(batch, cancellationToken);
