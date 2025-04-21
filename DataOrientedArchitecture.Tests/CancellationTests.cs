@@ -1,9 +1,8 @@
-﻿using AccountingData.Persistence;
-using AccountingDomain;
+﻿using AccountingDomain;
+using DataOrientedArchitecture.Data.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace DataOrientedArchitecture.Tests
 {

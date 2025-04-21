@@ -1,8 +1,8 @@
 ﻿using AccountingDomain;
-using Benchmarks.Entities;
+using DataOrientedArchitecture.Data.Entities;
 using Mapster;
 
-namespace AccountingData
+namespace DataOrientedArchitecture.Data
 {
     public static class MappingConfig
     {

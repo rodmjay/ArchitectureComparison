@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.Buffers;
+using System.IO.Pipelines;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using AccountingDataPipeline; // For the Record type
+
+// For the Record type
 
 namespace AccountingDataPipeline.Parsing
 {
@@ -15,65 +12,140 @@ namespace AccountingDataPipeline.Parsing
             Stream stream,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            // Use the optimized Record parser if T is Record; otherwise, fall back.
+            // Use the optimized Record parser if T is Record; otherwise, use the generic fallback.
             if (typeof(T) == typeof(Record))
             {
                 await foreach (var rec in ParseRecordsAsync(stream, cancellationToken))
-                {
                     yield return (T)(object)rec;
-                }
             }
             else
             {
                 await foreach (var item in ParseGenericAsync<T>(stream, cancellationToken))
-                {
                     yield return item;
-                }
             }
         }
 
         /// <summary>
-        /// Parses a complete JSON array of Record objects.
-        /// This demo implementation reads the entire stream into memory,
-        /// uses JsonDocument.Parse with AllowTrailingCommas enabled,
-        /// and then deserializes each element.
+        /// Optimized parser for Record objects.
+        /// This incremental parser expects a JSON array as input.
+        /// It uses direct deserialization from the Utf8JsonReader.
         /// </summary>
         private static async IAsyncEnumerable<Record> ParseRecordsAsync(
             Stream stream,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            // Read the entire stream into a MemoryStream.
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms, cancellationToken);
-            ms.Position = 0;
-            byte[] bytes = ms.ToArray();
+            // Create the PipeReader with leaveOpen:true so that the stream isn’t closed.
+            var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
+            JsonReaderState jsonState = default;
+            bool insideArray = false;
+            // Configure deserialization options. Optionally, you can set MaxDepth if needed.
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, MaxDepth = 64 };
 
-            // Configure options to allow trailing commas.
-            var jsonDocOptions = new JsonDocumentOptions { AllowTrailingCommas = true };
-            using JsonDocument doc = JsonDocument.Parse(bytes, jsonDocOptions);
-
-            // Verify that the root element is a JSON array.
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-                throw new JsonException("Expected JSON array as root element.");
-
-            var serializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNameCaseInsensitive = true,
-                AllowTrailingCommas = true
-            };
+                // Loop until no more data.
+                while (true)
+                {
+                    ReadResult result = await reader.ReadAsync(cancellationToken);
+                    ReadOnlySequence<byte> buffer = result.Buffer;
 
-            // Iterate over each element in the array, deserialize and yield.
-            foreach (JsonElement element in doc.RootElement.EnumerateArray())
+                    // If the stream is complete and there's no data, exit.
+                    if (result.IsCompleted && buffer.IsEmpty)
+                        break;
+
+                    // Initialize a local consumed position.
+                    SequencePosition consumed = buffer.Start;
+
+                    // Process tokens from the current buffer.
+                    while (true)
+                    {
+                        // Create a new Utf8JsonReader over the current buffer, using our saved state.
+                        var jsonReader = new Utf8JsonReader(buffer, isFinalBlock: result.IsCompleted, state: jsonState);
+
+                        // If we can't read a token, break out to await more data.
+                        if (!jsonReader.Read())
+                        {
+                            break;
+                        }
+
+                        // Mark the consumed position for this token.
+                        consumed = buffer.GetPosition(jsonReader.BytesConsumed);
+
+                        // If we haven't yet encountered the array start, expect it.
+                        if (!insideArray)
+                        {
+                            if (jsonReader.TokenType != JsonTokenType.StartArray)
+                                throw new JsonException("Expected start of array in JSON input.");
+                            insideArray = true;
+                            // Update state and slice off the StartArray token.
+                            jsonState = jsonReader.CurrentState;
+                            buffer = buffer.Slice(jsonReader.BytesConsumed);
+                            continue;
+                        }
+
+                        // If we encounter an EndArray token, update state, advance, and exit.
+                        if (jsonReader.TokenType == JsonTokenType.EndArray)
+                        {
+                            jsonState = jsonReader.CurrentState;
+                            consumed = buffer.GetPosition(jsonReader.BytesConsumed);
+                            reader.AdvanceTo(consumed, buffer.End);
+                            yield break;
+                        }
+
+                        // We expect a StartObject for each record.
+                        if (jsonReader.TokenType != JsonTokenType.StartObject)
+                        {
+                            // Skip any tokens that are not StartObject.
+                            jsonState = jsonReader.CurrentState;
+                            buffer = buffer.Slice(jsonReader.BytesConsumed);
+                            continue;
+                        }
+
+                        // At this point, we have a StartObject.
+                        // Try to directly deserialize a Record from the current reader.
+                        Record record;
+                        try
+                        {
+                            record = JsonSerializer.Deserialize<Record>(ref jsonReader, options);
+                        }
+                        catch (JsonException)
+                        {
+                            // Likely due to incomplete data. Preserve state and break to await more.
+                            jsonState = jsonReader.CurrentState;
+                            break;
+                        }
+
+                        // Update state and consumed position.
+                        jsonState = jsonReader.CurrentState;
+                        consumed = buffer.GetPosition(jsonReader.BytesConsumed);
+                        // Slice off the bytes for the record.
+                        buffer = buffer.Slice(jsonReader.BytesConsumed);
+
+                        yield return record;
+                    }
+
+                    // Advance the PipeReader so that processed data is released.
+                    reader.AdvanceTo(consumed, buffer.End);
+
+                    // If the read result is completed but some bytes remain, we treat that as an error.
+                    if (result.IsCompleted)
+                    {
+                        if (!buffer.IsEmpty)
+                            throw new JsonException("Incomplete JSON record at end of stream.");
+                        break;
+                    }
+                }
+            }
+            finally
             {
-                // Deserialize using the element's raw JSON text.
-                Record record = JsonSerializer.Deserialize<Record>(element.GetRawText(), serializerOptions);
-                yield return record;
+                // Complete the PipeReader. The underlying stream remains open because leaveOpen:true.
+                await reader.CompleteAsync();
             }
         }
 
         /// <summary>
         /// Generic fallback parser for types other than Record.
-        /// Uses the built-in asynchronous deserialization.
+        /// Uses the built-in JsonSerializer.DeserializeAsyncEnumerable.
         /// </summary>
         private static async IAsyncEnumerable<T> ParseGenericAsync<T>(
             Stream stream,
@@ -81,13 +153,11 @@ namespace AccountingDataPipeline.Parsing
         {
             await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable<T>(
                 stream,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true, AllowTrailingCommas = true },
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
                 cancellationToken))
             {
                 if (item != null)
-                {
                     yield return item;
-                }
             }
         }
     }

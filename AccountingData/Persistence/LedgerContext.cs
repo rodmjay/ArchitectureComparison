@@ -1,7 +1,7 @@
-﻿using Benchmarks.Entities;
+﻿using DataOrientedArchitecture.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace AccountingData.Persistence;
+namespace DataOrientedArchitecture.Data.Persistence;
 
 public class LedgerContext : DbContext
 {

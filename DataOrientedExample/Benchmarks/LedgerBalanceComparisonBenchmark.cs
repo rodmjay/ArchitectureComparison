@@ -1,13 +1,14 @@
 ﻿using AccountingDomain;
 using BenchmarkDotNet.Attributes;
 
-namespace Benchmarks.Benchmarks
+namespace DataOrientedArchitecture.Benchmarks.Benchmarks
 {
     [MemoryDiagnoser]
+    [ShortRunJob]
     public class LedgerBalanceComparisonBenchmark
     {
         // Parameterize the number of transactions; for example, 100,000.
-        [Params(1000, 10_000, 100_000, 1_000_000)]
+        [Params(1000, 10_000)]
         public int TransactionCount { get; set; }
 
         // The account we want to recompute.

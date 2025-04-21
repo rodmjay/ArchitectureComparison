@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using AccountingData.Persistence;
+﻿using DataOrientedArchitecture.Data.Persistence;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 

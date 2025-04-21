@@ -1,13 +1,15 @@
 ﻿using AccountingDomain;
 using BenchmarkDotNet.Attributes;
 
-namespace Benchmarks.Benchmarks
+namespace DataOrientedArchitecture.Benchmarks.Benchmarks
 {
     [MemoryDiagnoser]
+    [ShortRunJob]
+
     public class TransactionSearchBenchmark
     {
         // Test with different ledger sizes.
-        [Params(1000, 10_000, 100_000)]
+        [Params(1000, 10_000)]
         public int TransactionCount { get; set; }
 
         private Ledger ledger;

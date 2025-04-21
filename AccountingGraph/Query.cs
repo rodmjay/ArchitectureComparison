@@ -1,3 +1,5 @@
+namespace AccountingGraph;
+
 public class Query
 {
     [GraphQLDescription("Returns a simple greeting message.")]

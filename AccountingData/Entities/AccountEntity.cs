@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using AccountingDomain;
 
-namespace Benchmarks.Entities;
+namespace DataOrientedArchitecture.Data.Entities;
 
 public class AccountEntity
 {

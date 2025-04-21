@@ -1,20 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using AccountingDataPipeline;             // For Record
-using AccountingDataPipeline.Parsing;     // For IJsonParser implementations
+using AccountingDataPipeline.Parsing;
 using BenchmarkDotNet.Attributes;
+// For Record
+// For IJsonParser implementations
 
-namespace Benchmarks.Benchmarks
+namespace AccountingDataPipeline.Benchmarks
 {
     [MemoryDiagnoser]
     public class JsonParserBenchmarks
     {
         private MemoryStream _testDataStream;
-        private const int RecordCount = 10000; // Adjust the workload as desired.
+        private const int RecordCount = 1000; // Adjust the workload as desired.
 
         // Use a parameter to choose the parser.
         [Params("Optimized", "SystemText")]

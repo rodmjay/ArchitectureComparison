@@ -1,15 +1,12 @@
 ﻿using System.Text;
 using System.Text.Json;
-using AccountingDataPipeline;
 using AccountingDataPipeline.Parsing;
 using AccountingDataPipeline.Pipeline;
 using AccountingDataPipeline.Processing;
 using AccountingDataPipeline.Sinks;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using Microsoft.EntityFrameworkCore;
 
-namespace Benchmarks.Benchmarks
+namespace AccountingDataPipeline.Benchmarks
 {
     [MemoryDiagnoser]
     public class PipelineBenchmark
@@ -19,7 +16,7 @@ namespace Benchmarks.Benchmarks
 
         // Parameter: number of records to simulate.
         // Adjust RecordCount to simulate a larger file (e.g. 1GB worth of data).
-        [Params(10_000,100_000,1_000_000)]
+        [Params(1, 1000)]
         public int RecordCount { get; set; }
 
         [GlobalSetup]

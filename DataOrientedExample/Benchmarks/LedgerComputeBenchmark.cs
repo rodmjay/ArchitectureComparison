@@ -1,9 +1,11 @@
 ﻿using AccountingDomain;
 using BenchmarkDotNet.Attributes;
 
-namespace Benchmarks.Benchmarks
+namespace DataOrientedArchitecture.Benchmarks.Benchmarks
 {
     [MemoryDiagnoser]
+    [ShortRunJob]
+
     public class LedgerComputeBenchmark
     {
         // Parameter for BenchmarkDotNet – number of transactions in the ledger.

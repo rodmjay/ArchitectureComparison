@@ -1,7 +1,7 @@
 ﻿using AccountingDomain;
-using Benchmarks.Entities;
+using DataOrientedArchitecture.Data.Entities;
 
-namespace AccountingData.Persistence;
+namespace DataOrientedArchitecture.Data.Persistence;
 
 public interface ILedgerRepository
 {

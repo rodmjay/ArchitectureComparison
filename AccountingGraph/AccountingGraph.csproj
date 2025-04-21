@@ -14,7 +14,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\AccountingData\DataOrientedArchitecture.Data.csproj" />
 		<ProjectReference Include="..\AccountingDomain\AccountingDomain.csproj" />
-		<ProjectReference Include="..\AccountingData\AccountingData.csproj" />
 	</ItemGroup>
 </Project>

@@ -3,19 +3,31 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "DataOrientedExample\Benchmarks.csproj", "{1D20E773-E47B-488B-BC61-D940CDC43BBE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataOrientedArchitecture.Benchmarks", "DataOrientedExample\DataOrientedArchitecture.Benchmarks.csproj", "{1D20E773-E47B-488B-BC61-D940CDC43BBE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataOrientedArchitecture.Tests", "DataOrientedArchitecture.Tests\DataOrientedArchitecture.Tests.csproj", "{0A0A9851-C2AA-452E-8172-AF544219A1FA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingDomain", "AccountingDomain\AccountingDomain.csproj", "{01AB3F18-A4C7-40FA-9733-4B6B14CA35D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingData", "AccountingData\AccountingData.csproj", "{8536509E-6673-42FE-9FA6-92584B7C3474}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataOrientedArchitecture.Data", "AccountingData\DataOrientedArchitecture.Data.csproj", "{8536509E-6673-42FE-9FA6-92584B7C3474}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingGraph", "AccountingGraph\AccountingGraph.csproj", "{F94D4395-AC0A-4227-8ED4-01469F9546B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingDataPipeline", "AccountingDataPipeline\AccountingDataPipeline.csproj", "{30B320DD-E38A-4737-86E7-896D236F7B3B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingDataPipeline.Tests", "AccountingDataPipelineTests\AccountingDataPipeline.Tests.csproj", "{8F510E69-FBA2-4889-8DC1-30B8815600A3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data Pipeline", "Data Pipeline", "{7A55DA01-1503-412B-AC3D-2F0A1FB8876C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingDataPipeline.Benchmarks", "AccountingDataPipeline.Benchmarks\AccountingDataPipeline.Benchmarks.csproj", "{6FC33D7A-1FE5-4E8F-AACD-DB3860D15101}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data Oriented Architecture", "Data Oriented Architecture", "{607EDCBE-AA9B-4F51-906C-48271BA4E346}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain Driven Design", "Domain Driven Design", "{68BFDFA4-C87D-4D41-8330-307985E119E9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Helpers", "Helpers", "{C2655140-B013-4498-97BB-26D552AB1CFD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextGeneration", "TextGeneration\TextGeneration.csproj", "{2AC562A2-27B2-4A41-A5CC-5CFB608C7E52}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,8 +63,26 @@ Global
 		{8F510E69-FBA2-4889-8DC1-30B8815600A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F510E69-FBA2-4889-8DC1-30B8815600A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F510E69-FBA2-4889-8DC1-30B8815600A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FC33D7A-1FE5-4E8F-AACD-DB3860D15101}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FC33D7A-1FE5-4E8F-AACD-DB3860D15101}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FC33D7A-1FE5-4E8F-AACD-DB3860D15101}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FC33D7A-1FE5-4E8F-AACD-DB3860D15101}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AC562A2-27B2-4A41-A5CC-5CFB608C7E52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AC562A2-27B2-4A41-A5CC-5CFB608C7E52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AC562A2-27B2-4A41-A5CC-5CFB608C7E52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AC562A2-27B2-4A41-A5CC-5CFB608C7E52}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1D20E773-E47B-488B-BC61-D940CDC43BBE} = {607EDCBE-AA9B-4F51-906C-48271BA4E346}
+		{0A0A9851-C2AA-452E-8172-AF544219A1FA} = {607EDCBE-AA9B-4F51-906C-48271BA4E346}
+		{01AB3F18-A4C7-40FA-9733-4B6B14CA35D2} = {68BFDFA4-C87D-4D41-8330-307985E119E9}
+		{8536509E-6673-42FE-9FA6-92584B7C3474} = {607EDCBE-AA9B-4F51-906C-48271BA4E346}
+		{30B320DD-E38A-4737-86E7-896D236F7B3B} = {7A55DA01-1503-412B-AC3D-2F0A1FB8876C}
+		{8F510E69-FBA2-4889-8DC1-30B8815600A3} = {7A55DA01-1503-412B-AC3D-2F0A1FB8876C}
+		{6FC33D7A-1FE5-4E8F-AACD-DB3860D15101} = {7A55DA01-1503-412B-AC3D-2F0A1FB8876C}
+		{2AC562A2-27B2-4A41-A5CC-5CFB608C7E52} = {C2655140-B013-4498-97BB-26D552AB1CFD}
 	EndGlobalSection
 EndGlobal

@@ -1,15 +1,17 @@
-﻿using AccountingData.Persistence;
-using AccountingDomain;
+﻿using AccountingDomain;
 using BenchmarkDotNet.Attributes;
+using DataOrientedArchitecture.Data.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace Benchmarks.Benchmarks;
+namespace DataOrientedArchitecture.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
+[ShortRunJob]
+
 public class LedgerBenchmark
 {
     // Parameter for number of transactions.
-    [Params(100, 1_000, 10_000)]
+    [Params(100, 1_000)]
     public int TransactionCount { get; set; }
 
     // New parameter for testing different BatchSize values.

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Benchmarks.Entities;
+namespace DataOrientedArchitecture.Data.Entities;
 
 public class EntryEntity
 {

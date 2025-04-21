@@ -1,11 +1,13 @@
-﻿using AccountingData.Persistence;
-using AccountingDomain;
+﻿using AccountingDomain;
 using BenchmarkDotNet.Attributes;
+using DataOrientedArchitecture.Data.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace Benchmarks.Benchmarks
+namespace DataOrientedArchitecture.Benchmarks.Benchmarks
 {
     [MemoryDiagnoser]
+    [ShortRunJob]
+
     public class LedgerDeleteBenchmark
     {
         // Parameter for the number of transactions to include in the ledger.

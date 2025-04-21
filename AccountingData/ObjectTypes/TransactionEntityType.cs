@@ -1,7 +1,7 @@
-﻿using Benchmarks.Entities;
+﻿using DataOrientedArchitecture.Data.Entities;
 using HotChocolate.Types;
 
-namespace Benchmarks.ObjectTypes;
+namespace DataOrientedArchitecture.Data.ObjectTypes;
 
 public class TransactionEntityType : ObjectType<TransactionEntity>
 {

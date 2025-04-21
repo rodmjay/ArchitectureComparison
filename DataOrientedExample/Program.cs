@@ -1,19 +1,13 @@
-﻿using AccountingData.Persistence;
-using BenchmarkDotNet.Running;
-using Benchmarks.Benchmarks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using BenchmarkDotNet.Running;
+using DataOrientedArchitecture.Benchmarks.Benchmarks;
 
-namespace Benchmarks
+namespace DataOrientedArchitecture.Benchmarks
 {
     public class Program
     {
         public static void Main(string[] args)
         {
             //MappingConfig.RegisterMappings();
-
-
 
             //var host = Host.CreateDefaultBuilder(args)
             //    .ConfigureServices((context, services) =>
@@ -29,13 +23,21 @@ namespace Benchmarks
             //    })
             //    .Build();
 
-            BenchmarkRunner.Run<JsonParserBenchmarks>();
-
-           // BenchmarkRunner.Run<PipelineDatabaseBenchmark>();
+            // BenchmarkRunner.Run<PipelineDatabaseBenchmark>();
             //BenchmarkRunner.Run<PipelineBenchmark>();
             //BenchmarkRunner.Run<LedgerBenchmark>();
             //BenchmarkRunner.Run<LedgerBalanceComparisonBenchmark>();
             //BenchmarkRunner.Run<TransactionSearchBenchmark>();
+
+
+            var switcher = new BenchmarkSwitcher([
+                typeof(LedgerBenchmark),
+                typeof(LedgerBalanceComparisonBenchmark),
+                typeof(TransactionSearchBenchmark),
+                typeof(SaveLedgerTransactionBenchmark)
+            ]);
+
+            switcher.Run(args);
 
         }
     }

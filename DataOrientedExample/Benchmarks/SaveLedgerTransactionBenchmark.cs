@@ -1,15 +1,17 @@
-﻿using AccountingData.Persistence;
-using AccountingDomain;
+﻿using AccountingDomain;
 using BenchmarkDotNet.Attributes;
+using DataOrientedArchitecture.Data.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace Benchmarks.Benchmarks
+namespace DataOrientedArchitecture.Benchmarks.Benchmarks
 {
     [MemoryDiagnoser]
+    [ShortRunJob]
+
     public class SaveLedgerTransactionBenchmark
     {
         // Parameterize the number of transactions in the ledger.
-        [Params(10, 100, 1000, 10000)]
+        [Params(10, 100, 1000)]
         public int TransactionCount { get; set; }
 
         // Parameter for Bulk Batch Size.

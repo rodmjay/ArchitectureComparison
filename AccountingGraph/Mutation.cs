@@ -1,3 +1,5 @@
+namespace AccountingGraph;
+
 public class Mutation
 {
     [GraphQLDescription("A simple test mutation that returns a greeting.")]

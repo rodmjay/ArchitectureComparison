@@ -1,19 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using AccountingDataPipeline;
 using AccountingDataPipeline.Data;
 using AccountingDataPipeline.Parsing;
 using AccountingDataPipeline.Pipeline;
 using AccountingDataPipeline.Processing;
 using AccountingDataPipeline.Sinks;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
 using Microsoft.EntityFrameworkCore;
 
-namespace Benchmarks.Benchmarks
+namespace AccountingDataPipeline.Benchmarks
 {
     [MemoryDiagnoser]
     public class PipelineDatabaseBenchmark
@@ -27,12 +22,8 @@ namespace Benchmarks.Benchmarks
             "Server=(localdb)\\MSSQLLocalDB;Database=BenchmarkDb;Trusted_Connection=True;MultipleActiveResultSets=true";
 
         // Benchmark for a small (1) and large (10,000) record set.
-        [Params(1, 10_000)]
+        [Params(1000, 10000)]
         public int RecordCount { get; set; }
-
-        // Use the parameter to select the parser variant: "Old" for SystemTextJsonStreamParser, or "New" for LargeFileUtf8JsonParser.
-        [Params("Old", "New")]
-        public string ParserVariant { get; set; }
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -53,12 +44,7 @@ namespace Benchmarks.Benchmarks
             var dbContextFactory = new SimpleDbContextFactory(_dbOptions);
 
             // Select the JSON parser based on the benchmark parameter.
-            IJsonParser jsonParser = ParserVariant switch
-            {
-                "Old" => new SystemTextJsonStreamParser(),
-                "New" => new LargeFileUtf8JsonParser(),
-                _ => throw new ArgumentException("Invalid parser variant")
-            };
+            IJsonParser jsonParser = new SystemTextJsonStreamParser();
 
             // Set up the pipeline components.
             IRecordTransformer<Record, Record> transformer = new SampleRecordTransformer();

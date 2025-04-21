@@ -1,10 +1,10 @@
 ﻿using AccountingDomain;
-using Benchmarks.Entities;
+using DataOrientedArchitecture.Data.Entities;
 using HotChocolate.Types;
 
 // For AccountType
 
-namespace AccountingData.ObjectTypes;
+namespace DataOrientedArchitecture.Data.ObjectTypes;
 
 public class AccountEntityType : ObjectType<AccountEntity>
 {

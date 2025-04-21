@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AccountingDataPipeline\AccountingDataPipeline.csproj" />
-    <ProjectReference Include="..\AccountingData\AccountingData.csproj" />
+    <ProjectReference Include="..\AccountingData\DataOrientedArchitecture.Data.csproj" />
     <ProjectReference Include="..\AccountingDomain\AccountingDomain.csproj" />
   </ItemGroup>
 

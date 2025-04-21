@@ -1,9 +1,11 @@
-﻿namespace AccountingDomain;
+﻿using System.Runtime.InteropServices;
 
+namespace AccountingDomain;
+
+[StructLayout(LayoutKind.Sequential, Pack = 16)]
 public struct Entry
 {
-    public int TransactionId;
-    public int AccountId;
-    public decimal Amount;
-    // You could include e.g. a short memo or date, but keep it minimal for hot data
+    public int TransactionId { get; set; }
+    public int AccountId { get; set; }
+    public decimal Amount { get; set; }
 }

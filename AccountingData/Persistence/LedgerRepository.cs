@@ -1,10 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
 using AccountingDomain;
-using Benchmarks.Entities;
+using DataOrientedArchitecture.Data.Entities;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 
-namespace AccountingData.Persistence;
+namespace DataOrientedArchitecture.Data.Persistence;
 
 public class LedgerRepository : ILedgerRepository
 {
@@ -139,75 +139,109 @@ public class LedgerRepository : ILedgerRepository
 
         return loadedLedger;
     }
-
-    public async Task SaveLedgerAsync(Ledger ledger, int batchSize = 5000, bool useTransaction = true, CancellationToken cancellationToken = default)
+    public async Task SaveLedgerAsync(
+        Ledger ledger,
+        int batchSize = 5000,
+        bool useTransaction = true,
+        CancellationToken cancellationToken = default)
     {
-        // Map your domain objects to EF entities.
-        var accountEntities = new List<AccountEntity>(ledger.Accounts.Count);
-        foreach (var account in ledger.Accounts)
-        {
-            accountEntities.Add(new AccountEntity
+        // 1) Map “to‑delete” keys into EF entities
+        var delEntryEntities = ledger.DeletedEntryKeys
+            .Select(k => new EntryEntity
             {
-                // If you're letting SQL Server generate keys, you might omit setting Id
-                Id = account.Id,
-                Name = account.Name,
-                Type = account.Type
-            });
-        }
+                TransactionId = k.TransactionId,
+                AccountId = k.AccountId
+            })
+            .ToList();
 
-        var transactionEntities = new List<TransactionEntity>(ledger.Transactions.Count);
-        foreach (var tran in ledger.Transactions)
-        {
-            transactionEntities.Add(new TransactionEntity
+        var delTransEntities = ledger.DeletedTransactionIds
+            .Select(id => new TransactionEntity { Id = id })
+            .ToList();
+
+        var delAcctEntities = ledger.DeletedAccountIds
+            .Select(id => new AccountEntity { Id = id })
+            .ToList();
+
+        // 2) Map your current/live domain objects
+        var accountEntities = ledger.Accounts
+            .Select(a => new AccountEntity
             {
-                Id = tran.Id,
-                Date = tran.Date,
-                Description = tran.Description
-            });
-        }
+                Id = a.Id,
+                Name = a.Name,
+                Type = a.Type
+            })
+            .ToList();
 
-        var entryEntities = new List<EntryEntity>(ledger.Entries.Count);
-        foreach (var entry in ledger.Entries)
-        {
-            entryEntities.Add(new EntryEntity
+        var transactionEntities = ledger.Transactions
+            .Select(t => new TransactionEntity
             {
-                TransactionId = entry.TransactionId,
-                AccountId = entry.AccountId,
-                Amount = entry.Amount
-            });
-        }
+                Id = t.Id,
+                Date = t.Date,
+                Description = t.Description
+            })
+            .ToList();
 
-        // Clear any existing tracking.
+        var entryEntities = ledger.Entries
+            .Select(e => new EntryEntity
+            {
+                TransactionId = e.TransactionId,
+                AccountId = e.AccountId,
+                Amount = e.Amount
+            })
+            .ToList();
+
+        // 3) Reset EF change‑tracker
         _context.ChangeTracker.Clear();
 
-        // Set up a BulkConfig object with optimizations.
+        // 4) Configure bulk options
         var bulkConfig = new BulkConfig
         {
-            BatchSize = batchSize,           // Higher batch size may reduce database round-trips.
-            UseTempDB = useTransaction,                // Use TempDB for minimal logging (if allowed).
+            BatchSize = batchSize,
+            UseTempDB = useTransaction,
             DoNotUpdateIfTimeStampChanged = true,
-            SetOutputIdentity = true         // Retrieve generated keys and rowversions.
+            SetOutputIdentity = true
         };
 
+        // 5) Perform deletes then inserts inside a single TX
         if (useTransaction)
         {
-            // Wrap all bulk operations in a single transaction.
-            using (var transaction = await _context.Database.BeginTransactionAsync(cancellationToken))
-            {
-                await _context.BulkInsertAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
-                await _context.BulkInsertAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
-                await _context.BulkInsertAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
+            await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            }
+            if (delEntryEntities.Any())
+                await _context.BulkDeleteAsync(delEntryEntities, bulkConfig, cancellationToken: cancellationToken);
+
+            if (delTransEntities.Any())
+                await _context.BulkDeleteAsync(delTransEntities, bulkConfig, cancellationToken: cancellationToken);
+
+            if (delAcctEntities.Any())
+                await _context.BulkDeleteAsync(delAcctEntities, bulkConfig, cancellationToken: cancellationToken);
+
+            // inserts
+            await _context.BulkInsertAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
+            await _context.BulkInsertAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
+            await _context.BulkInsertAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
+
+            await tx.CommitAsync(cancellationToken);
         }
         else
         {
-            // Execute bulk operations without an explicit transaction. Just used for benchmarking
+            // without explicit transaction
+            if (delEntryEntities.Any())
+                await _context.BulkDeleteAsync(delEntryEntities, bulkConfig, cancellationToken: cancellationToken);
+            if (delTransEntities.Any())
+                await _context.BulkDeleteAsync(delTransEntities, bulkConfig, cancellationToken: cancellationToken);
+            if (delAcctEntities.Any())
+                await _context.BulkDeleteAsync(delAcctEntities, bulkConfig, cancellationToken: cancellationToken);
+
             await _context.BulkInsertAsync(accountEntities, bulkConfig, cancellationToken: cancellationToken);
             await _context.BulkInsertAsync(transactionEntities, bulkConfig, cancellationToken: cancellationToken);
             await _context.BulkInsertAsync(entryEntities, bulkConfig, cancellationToken: cancellationToken);
         }
+
+        // 6) Clear the in‑memory trackers
+        ledger.DeletedEntryKeys.Clear();
+        ledger.DeletedTransactionIds.Clear();
+        ledger.DeletedAccountIds.Clear();
     }
 
 
